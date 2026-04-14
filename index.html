@@ -366,7 +366,10 @@
   <footer>STUDIO TOOLS v1.0 — FASE 01 PERCUSIÓN</footer>
 </div>
 <script>
-const API_URL = 'https://studio-tools-pro.onrender.com';
+const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') 
+  ? 'http://localhost:8000' 
+  : 'https://TU-API-EN-RENDER.onrender.com'; // <-- Aquí irá la URL real cuando publiques el backend
+
 let selectedFile = null;
 let audioContext = null;
 let audioBuffer = null;
@@ -416,7 +419,8 @@ function formatBytes(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 function handleFile(file) {
-  if (!file || !file.name.endsWith('.wav')) { showError('Solo se aceptan archivos .wav'); return; }
+  if (!file || !file.name.toLowerCase().endsWith('.wav')) { showError('Solo se aceptan archivos .wav'); return; }
+  if (file.size > 60 * 1024 * 1024) { showError('El archivo es demasiado grande (Máximo 60 MB)'); return; }
   selectedFile = file;
   fileName.textContent = file.name;
   fileSize.textContent = formatBytes(file.size);

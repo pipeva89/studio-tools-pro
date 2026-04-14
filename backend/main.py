@@ -82,8 +82,10 @@ def quantize_audio(
     return y_out
 
 
+MAX_FILE_SIZE = 60 * 1024 * 1024  # 60 MB
+
 @app.post("/quantize-percussion")
-async def quantize_percussion(
+def quantize_percussion(
     file: UploadFile = File(...),
     bpm: float = Form(120.0),
     quantize_strength: float = Form(0.8),
@@ -91,7 +93,10 @@ async def quantize_percussion(
     onset_sensitivity: float = Form(0.5),
     auto_bpm: bool = Form(False),
 ):
-    if not file.filename.endswith(".wav"):
+    if file.size and file.size > MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail="El archivo de audio no debe superar los 60 MB.")
+
+    if not file.filename.lower().endswith(".wav"):
         raise HTTPException(status_code=400, detail="Solo se aceptan archivos .wav")
 
     job_id = str(uuid.uuid4())
@@ -99,7 +104,7 @@ async def quantize_percussion(
     output_path = os.path.join(TEMP_DIR, f"{job_id}_output.wav")
 
     try:
-        content = await file.read()
+        content = file.file.read()
         with open(input_path, "wb") as f:
             f.write(content)
 
@@ -137,9 +142,12 @@ async def quantize_percussion(
             os.remove(input_path)
 
 
-@app.get("/detect-bpm")
-async def detect_bpm_endpoint(file: UploadFile = File(...)):
-    content = await file.read()
+@app.post("/detect-bpm")
+def detect_bpm_endpoint(file: UploadFile = File(...)):
+    if file.size and file.size > MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail="El archivo de audio no debe superar los 60 MB.")
+
+    content = file.file.read()
     job_id = str(uuid.uuid4())
     input_path = os.path.join(TEMP_DIR, f"{job_id}_bpm.wav")
     with open(input_path, "wb") as f:
